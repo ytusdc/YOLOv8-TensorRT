@@ -20,17 +20,12 @@ public:
                                     float iou_thres   = 0.65f,
                                     int   topk        = 100);
     void    make_pipe(bool warmup = true);
-    void    copy_from_Mat(const cv::Mat& image);
-    void    copy_from_Mat(const cv::Mat& image, cv::Size& size);
+    // void    copy_from_Mat(const cv::Mat& image, cv::Size& size);
     void    infer(cv::Mat& image);
-    void    postprocess(std::vector<Object>& objs,
-                        float                score_thres = 0.25f,
-                        float                iou_thres   = 0.65f,
-                        int                  topk        = 100,
-                        int                  num_labels  = 80);
-    static void     draw_objects(const cv::Mat&                                image,
+    void    postprocess(std::vector<Box>&    boxes_vec);
+    static void     draw_objects(const cv::Mat&                               image,
                                 cv::Mat&                                      res,
-                                const std::vector<Object>&                    objs,
+                                const std::vector<Box>&                       boxes_vec,
                                 const std::vector<std::string>&               CLASS_NAMES,
                                 const std::vector<std::vector<unsigned int>>& COLORS);
 
@@ -55,7 +50,6 @@ public:
     std::vector<float*>   m_host_ptrs;
     std::vector<float*>   m_device_ptrs;
 
-    PreParam m_pparam;
 
 private:
     nvinfer1::ICudaEngine*       m_engine  = nullptr;

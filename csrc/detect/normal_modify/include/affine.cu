@@ -81,8 +81,10 @@ __global__ void warp_affine_bilinear_kernel(
 }
 
 
-void warp_affine_bilinear(uint8_t* src, int src_width, int src_height,
-	float* dst,int dst_width, int dst_height, uint8_t fill_value, AffineMatrix matrix, cudaStream_t stream)
+void warp_affine_bilinear(
+	uint8_t* src, int src_width, int src_height,
+	float* dst,int dst_width, int dst_height, 
+	uint8_t fill_value, AffineMatrix matrix, cudaStream_t stream)
 
 
 {
@@ -93,7 +95,5 @@ void warp_affine_bilinear(uint8_t* src, int src_width, int src_height,
 		src, src_width, src_height,
 		dst, dst_width, dst_height,
 		fill_value,matrix);
-
-	//printf("ºËº¯ÊýÍê³É\n");
 }
 

@@ -172,57 +172,40 @@ void YOLOv8::make_pipe(bool warmup)
     }
 }
 
-void YOLOv8::copy_from_Mat(const cv::Mat& image)
-{
-    // cv::Mat  nchw;
-    // auto&    in_binding = this->m_input_bindings[0];
-    // int      width      = in_binding.dims.d[3];
-    // int      height     = in_binding.dims.d[2];
-    // cv::Size size{width, height};
-    // this->letterbox(image, nchw, size);
-
-    // CHECK(cudaMemcpyAsync(
-    //     this->m_device_ptrs[0], nchw.ptr<float>(), nchw.total() * nchw.elemSize(), cudaMemcpyHostToDevice, this->m_cudaStream));
 
 
-    // this->m_context->setBindingDimensions(0, nvinfer1::Dims{4, {1, 3, height, width}});
-}
+// void YOLOv8::copy_from_Mat(const cv::Mat& image, cv::Size& size)
+// {
+// 	int width = image.cols;
+// 	int height = image.rows;
+// 	int channels = image.channels();
+// 	int src_size = width * height * channels;
+// 	uint8_t* psrc_device = nullptr;
 
-void YOLOv8::copy_from_Mat(const cv::Mat& image, cv::Size& size)
-{
-	int width = image.cols;
-	int height = image.rows;
-	int channels = image.channels();
-	int src_size = width * height * channels;
-	uint8_t* psrc_device = nullptr;
-
-	CHECK(cudaMalloc(&psrc_device, src_size));
-	CHECK(cudaMemcpyAsync(psrc_device, image.data, src_size, cudaMemcpyHostToDevice, this->m_cudaStream));
+// 	CHECK(cudaMalloc(&psrc_device, src_size));
+// 	CHECK(cudaMemcpyAsync(psrc_device, image.data, src_size, cudaMemcpyHostToDevice, this->m_cudaStream));
     
-	AffineMatrix affine;
-	affine.compute(width, height, this->m_input_size.width, this->m_input_size.height);
-    m_affine = affine;
+// 	AffineMatrix affine;
+// 	affine.compute(width, height, this->m_input_size.width, this->m_input_size.height);
+//     m_affine = affine;
 
-	warp_affine_bilinear(psrc_device, width, height, 
-                        this->m_device_ptrs[0], 
-                        this->m_input_size.width, 
-                        this->m_input_size.height, 
-                        114, affine, this->m_cudaStream);
+// 	warp_affine_bilinear(psrc_device, width, height, 
+//                         this->m_device_ptrs[0], this->m_input_size.width, this->m_input_size.height, 
+//                         114, affine, this->m_cudaStream);
 
-    this->m_context->setBindingDimensions(0, nvinfer1::Dims{4, {1, 3, this->m_input_size.height, this->m_input_size.width}});
+//     this->m_context->setBindingDimensions(0, nvinfer1::Dims{4, {1, 3, this->m_input_size.height, this->m_input_size.width}});
     
-}
+// }
 
 void YOLOv8::infer(cv::Mat& image)
 {
-
     int width = image.cols;
 	int height = image.rows;
 	int channels = image.channels();
 	int src_size = width * height * channels;
 	uint8_t* psrc_device = nullptr;
 
-	CHECK(cudaMalloc(&psrc_device, src_size));
+	CHECK(cudaMallocAsync(&psrc_device, src_size, this->m_cudaStream));
 	CHECK(cudaMemcpyAsync(psrc_device, image.data, src_size, cudaMemcpyHostToDevice, this->m_cudaStream));
     
 	AffineMatrix affine;
@@ -230,9 +213,7 @@ void YOLOv8::infer(cv::Mat& image)
     m_affine = affine;
 
 	warp_affine_bilinear(psrc_device, width, height, 
-                        this->m_device_ptrs[0], 
-                        this->m_input_size.width, 
-                        this->m_input_size.height, 
+                        this->m_device_ptrs[0], this->m_input_size.width, this->m_input_size.height, 
                         114, affine, this->m_cudaStream);
 
     this->m_context->setBindingDimensions(0, nvinfer1::Dims{4, {1, 3, this->m_input_size.height, this->m_input_size.width}});
@@ -246,16 +227,14 @@ void YOLOv8::infer(cv::Mat& image)
     cudaStreamSynchronize(this->m_cudaStream);
 }
 
-void YOLOv8::postprocess(std::vector<Object>& objs, float score_thres, float iou_thres, int topk, int num_labels)
+void YOLOv8::postprocess(std::vector<Box>& boxes_vec)
 {   
     AffineMatrix  affine = m_affine;
-    objs.clear();
+    boxes_vec.clear();
 
     std::vector<cv::Rect> bboxes;
 	std::vector<int> classIds;
 	std::vector<float> scores;
-
-
 
     cv::Mat output = cv::Mat(m_output_numprob, m_output_numbox, CV_32F, static_cast<float*>(this->m_host_ptrs[0]));
     output         = output.t();
@@ -270,7 +249,7 @@ void YOLOv8::postprocess(std::vector<Object>& objs, float score_thres, float iou
 
         if (score > m_score_thres) {
 
-             int label = max_s_ptr - scores_ptr;
+            int label = max_s_ptr - scores_ptr;
 
 			float cx = row_ptr[0];
 			float cy = row_ptr[1];
@@ -288,8 +267,6 @@ void YOLOv8::postprocess(std::vector<Object>& objs, float score_thres, float iou
             bboxes.push_back(box);
             classIds.push_back(label);
             scores.push_back(score);
-
-
         }
     }
 
@@ -298,21 +275,15 @@ void YOLOv8::postprocess(std::vector<Object>& objs, float score_thres, float iou
 		return ;
 	}
 
-	std::vector<int> indexes;
-	cv::dnn::NMSBoxes(bboxes, scores, m_score_thres, m_iou_thres, indexes);
-	for (size_t i = 0; i < indexes.size(); i++) {
-		int idx = indexes[i];
+	std::vector<int> indexes_vec;
+	cv::dnn::NMSBoxes(bboxes, scores, m_score_thres, m_iou_thres, indexes_vec);
+
+    for (auto idx :indexes_vec ) {
 		auto& ibox = bboxes[idx];
 		float x = ibox.x;
 		float y = ibox.y;
 		float w = ibox.width;
 		float h = ibox.height;
-
-        // std::cout << "m_affine" << std::endl;
-        // std::cout<< "d2i[0] = " << affine.d2i[0] << std::endl;
-        // std::cout<< "d2i[2] = " << affine.d2i[2] << std::endl;
-        // std::cout<< "d2i[5] = " << affine.d2i[5] << std::endl;
-
 
 		int image_base_x = static_cast<int>(affine.d2i[0] * x + affine.d2i[2]);
 		int image_base_y = static_cast<int>(affine.d2i[0] * y + affine.d2i[5]);
@@ -321,48 +292,33 @@ void YOLOv8::postprocess(std::vector<Object>& objs, float score_thres, float iou
 		if ((image_base_width <= 0) || (image_base_height <= 0))
 			continue;
 
-		// struct Box box;
-		// box.x = image_base_x;
-		// box.y = image_base_y;
-		// box.width = image_base_width;
-		// box.height = image_base_height;
-		// box.score = scores[idx];
-		// box.class_id = classIds[idx];
-		// objs.push_back(box);
-
-
-        Object obj;
-        obj.rect  = cv::Rect(image_base_x, image_base_y, image_base_width, image_base_height);
-        obj.prob  = scores[idx];
-        obj.label = classIds[idx];
-        objs.push_back(obj);
-
-        std::cout <<  obj.prob  << std::endl;
-
-	    
+        Box box;
+        box.rect  = cv::Rect(image_base_x, image_base_y, image_base_width, image_base_height);
+        box.score  = scores[idx];
+        box.class_id = classIds[idx];
+        boxes_vec.push_back(box);
     }
-
 }
 
 void YOLOv8::draw_objects(const cv::Mat&                                image,
                           cv::Mat&                                      res,
-                          const std::vector<Object>&                    objs,
+                          const std::vector<Box>&                       boxes_vec,
                           const std::vector<std::string>&               CLASS_NAMES,
                           const std::vector<std::vector<unsigned int>>& COLORS)
 {
     res = image.clone();
-    for (auto& obj : objs) {
-        cv::Scalar color = cv::Scalar(COLORS[obj.label][0], COLORS[obj.label][1], COLORS[obj.label][2]);
-        cv::rectangle(res, obj.rect, color, 2);
+    for (auto& box : boxes_vec) {
+        cv::Scalar color = cv::Scalar(COLORS[box.class_id][0], COLORS[box.class_id][1], COLORS[box.class_id][2]);
+        cv::rectangle(res, box.rect, color, 2);
 
         char text[256];
-        sprintf(text, "%s %.1f%%", CLASS_NAMES[obj.label].c_str(), obj.prob * 100);
+        sprintf(text, "%s %.1f%%", CLASS_NAMES[box.class_id].c_str(), box.score * 100);
 
         int      baseLine   = 0;
         cv::Size label_size = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine);
 
-        int x = (int)obj.rect.x;
-        int y = (int)obj.rect.y + 1;
+        int x = (int)box.rect.x;
+        int y = (int)box.rect.y + 1;
 
         if (y > res.rows) {
             y = res.rows;

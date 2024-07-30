@@ -89,7 +89,7 @@ int main(int argc, char** argv)
     float    score_thres = 0.25f;
     float    iou_thres   = 0.65f;
 
-    std::vector<Object> objs;
+    std::vector<Box> boxes_vec;
 
     cv::namedWindow("result", cv::WINDOW_AUTOSIZE);
 
@@ -101,13 +101,13 @@ int main(int argc, char** argv)
             return -1;
         }
         while (cap.read(image)) {
-            objs.clear();
+            boxes_vec.clear();
             // yolov8->copy_from_Mat(image, size);
             auto start = std::chrono::system_clock::now();
             yolov8->infer(image);
             auto end = std::chrono::system_clock::now();
-            yolov8->postprocess(objs, score_thres, iou_thres, topk, num_labels);
-            yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS);
+            yolov8->postprocess(boxes_vec);
+            yolov8->draw_objects(image, res, boxes_vec, CLASS_NAMES, COLORS);
             auto tc = (double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.;
             printf("cost %2.4lf ms\n", tc);
             cv::imshow("result", res);
@@ -118,14 +118,14 @@ int main(int argc, char** argv)
     }
     else {
         for (auto& p : imagePathList) {
-            objs.clear();
+            boxes_vec.clear();
             image = cv::imread(p);
             // yolov8->copy_from_Mat(image, size);
             auto start = std::chrono::system_clock::now();
             yolov8->infer(image);
             auto end = std::chrono::system_clock::now();
-            yolov8->postprocess(objs, score_thres, iou_thres, topk, num_labels);
-            yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS);
+            yolov8->postprocess(boxes_vec);
+            yolov8->draw_objects(image, res, boxes_vec, CLASS_NAMES, COLORS);
             auto tc = (double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.;
             printf("cost %2.4lf ms\n", tc);
             cv::imshow("result", res);

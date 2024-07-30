@@ -96,18 +96,10 @@ struct Binding {
     std::string    name;
 };
 
-struct Object {
-    cv::Rect_<float> rect;      //rect(x, y, w, h)
-    int              label = 0;
-    float            prob  = 0.0;
-};
-
-struct PreParam {
-    float ratio  = 1.0f;
-    float dw     = 0.0f;
-    float dh     = 0.0f;
-    float height = 0;
-    float width  = 0;
+struct Box {
+    cv::Rect_<float> rect;      //Rect(x, y, w, h)
+    int              class_id = 0;
+    float            score  = 0.0;
 };
 }  // namespace det
 #endif  // DETECT_NORMAL_COMMON_HPP
