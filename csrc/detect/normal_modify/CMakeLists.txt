@@ -58,6 +58,8 @@ add_executable(${PROJECT_NAME}
         main.cpp
         include/yolov8.cpp
         include/common.hpp
+        include/utils.hpp
+        include/affine.cu
         )
 
 # 将链接目录添加到target

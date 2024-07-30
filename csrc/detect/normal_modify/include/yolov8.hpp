@@ -6,6 +6,8 @@
 #include "NvInferPlugin.h"
 #include "common.hpp"
 #include <fstream>
+#include "utils.hpp"
+
 
 using namespace det;
 
@@ -34,8 +36,11 @@ public:
     int                  m_num_outputs = 0;
     std::vector<Binding> m_input_bindings;
     std::vector<Binding> m_output_bindings;
-    std::vector<void*>   m_host_ptrs;
-    std::vector<void*>   m_device_ptrs;
+    // std::vector<void*>   m_host_ptrs;
+    // std::vector<void*>   m_device_ptrs;
+
+    std::vector<float*>   m_host_ptrs;
+    std::vector<float*>   m_device_ptrs;
 
     PreParam m_pparam;
 
@@ -45,5 +50,7 @@ private:
     nvinfer1::IExecutionContext* m_context = nullptr;
     cudaStream_t                 m_cudaStream  = nullptr;
     Logger                       m_gLogger{nvinfer1::ILogger::Severity::kERROR};
+
+    AffineMatrix m_affine;
 };
 #endif  // DETECT_NORMAL_YOLOV8_HPP
