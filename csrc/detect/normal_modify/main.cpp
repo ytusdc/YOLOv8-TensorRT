@@ -53,8 +53,16 @@ int main(int argc, char** argv)
     std::vector<std::string> imagePathList;
     bool                     isVideo{false};
 
-    auto yolov8 = new YOLOv8(engine_file_path);
-    yolov8->make_pipe(true);
+    auto yolov8 = new YOLOv8();
+
+    bool re = yolov8->initConfig(engine_file_path);
+
+    if (!re) {
+        std::cout << "init model failed.";
+        return 0;
+    }
+
+    // yolov8->make_pipe(false);
 
     if (fs::exists(path)) {
         std::string suffix = path.extension();
@@ -94,9 +102,9 @@ int main(int argc, char** argv)
         }
         while (cap.read(image)) {
             objs.clear();
-            yolov8->copy_from_Mat(image, size);
+            // yolov8->copy_from_Mat(image, size);
             auto start = std::chrono::system_clock::now();
-            yolov8->infer();
+            yolov8->infer(image);
             auto end = std::chrono::system_clock::now();
             yolov8->postprocess(objs, score_thres, iou_thres, topk, num_labels);
             yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS);
@@ -112,9 +120,9 @@ int main(int argc, char** argv)
         for (auto& p : imagePathList) {
             objs.clear();
             image = cv::imread(p);
-            yolov8->copy_from_Mat(image, size);
+            // yolov8->copy_from_Mat(image, size);
             auto start = std::chrono::system_clock::now();
-            yolov8->infer();
+            yolov8->infer(image);
             auto end = std::chrono::system_clock::now();
             yolov8->postprocess(objs, score_thres, iou_thres, topk, num_labels);
             yolov8->draw_objects(image, res, objs, CLASS_NAMES, COLORS);

@@ -16,9 +16,10 @@ __device__ void affine_project(float* matrix,int x,int y,float* proj_x,float* pr
 
 
 __global__ void warp_affine_bilinear_kernel(
-	uint8_t* src, int src_line_size, int src_width, int src_height,
+	uint8_t* src, int src_width, int src_height,
 	float* dst,int dst_width, int dst_height,uint8_t fill_value, AffineMatrix matrix)
-{
+{	
+	int src_line_size = src_width * 3;
 	int dx = blockDim.x * blockIdx.x + threadIdx.x;
 	int dy = blockDim.y * blockIdx.y + threadIdx.y;
 	if (dx >= dst_width || dy >= dst_height) return;
@@ -80,7 +81,7 @@ __global__ void warp_affine_bilinear_kernel(
 }
 
 
-void warp_affine_bilinear(uint8_t* src, int src_line_size, int src_width, int src_height,
+void warp_affine_bilinear(uint8_t* src, int src_width, int src_height,
 	float* dst,int dst_width, int dst_height, uint8_t fill_value, AffineMatrix matrix, cudaStream_t stream)
 
 
@@ -89,7 +90,7 @@ void warp_affine_bilinear(uint8_t* src, int src_line_size, int src_width, int sr
 	dim3 grid_size((dst_width+31)/32,(dst_height+31)/32);
 
 	warp_affine_bilinear_kernel <<<grid_size, block_size,0,stream>> > (
-		src, src_line_size, src_width, src_height,
+		src, src_width, src_height,
 		dst, dst_width, dst_height,
 		fill_value,matrix);
 
