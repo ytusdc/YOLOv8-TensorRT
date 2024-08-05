@@ -1,6 +1,3 @@
-//
-// Created by ubuntu on 1/20/23.
-//
 #ifndef DETECT_NORMAL_YOLOV8_HPP
 #define DETECT_NORMAL_YOLOV8_HPP
 #include "NvInferPlugin.h"
@@ -19,15 +16,13 @@ public:
                                     float score_thres = 0.25f, 
                                     float iou_thres   = 0.65f,
                                     int   topk        = 100);
-    void    make_pipe(bool warmup = true);
+    // void    make_pipe(bool warmup = true);
     // void    copy_from_Mat(const cv::Mat& image, cv::Size& size);
     void    infer(cv::Mat& image);
-    void    postprocess(std::vector<Box>&    boxes_vec);
+    void    postprocess(std::vector<Box>& boxes_vec);
+    void    detect(cv::Mat& image,std::vector<Box>& boxes);
     static void     draw_objects(const cv::Mat&                               image,
-                                cv::Mat&                                      res,
-                                const std::vector<Box>&                       boxes_vec,
-                                const std::vector<std::string>&               CLASS_NAMES,
-                                const std::vector<std::vector<unsigned int>>& COLORS);
+                                const std::vector<Box>&                       boxes_vec);
 
 
     cv::Size             m_input_size   = cv::Size{640, 640};   // cv::Size{width, height}
@@ -57,7 +52,6 @@ private:
     nvinfer1::IExecutionContext* m_context = nullptr;
     cudaStream_t                 m_cudaStream  = nullptr;
     Logger                       m_gLogger{nvinfer1::ILogger::Severity::kERROR};
-
     AffineMatrix m_affine;
 };
 #endif  // DETECT_NORMAL_YOLOV8_HPP

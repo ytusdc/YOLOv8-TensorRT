@@ -13,8 +13,6 @@ __device__ void affine_project(float* matrix,int x,int y,float* proj_x,float* pr
 	*proj_y = matrix[3] * x + matrix[4] * y + matrix[5];
 }
 
-
-
 __global__ void warp_affine_bilinear_kernel(
 	uint8_t* src, int src_width, int src_height,
 	float* dst,int dst_width, int dst_height,uint8_t fill_value, AffineMatrix matrix)
