@@ -56,7 +56,7 @@ include_directories(${INCLUDE_DIRS})
 #生成程序
 add_executable(${PROJECT_NAME}
         main.cpp
-        include/yolov8.cpp
+        include/yolov8_det.cpp
         include/common.hpp
         include/utils.hpp
         include/affine.cu

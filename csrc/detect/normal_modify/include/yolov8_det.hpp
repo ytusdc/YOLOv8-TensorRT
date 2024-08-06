@@ -8,10 +8,10 @@
 
 using namespace det;
 
-class YOLOv8 {
+class YOLOv8_Det {
 public:
-    explicit YOLOv8(){};
-    ~YOLOv8();
+    explicit YOLOv8_Det(){};
+    ~YOLOv8_Det();
     bool    initConfig(const std::string& engine_file_path, 
                                     float score_thres = 0.25f, 
                                     float iou_thres   = 0.65f,

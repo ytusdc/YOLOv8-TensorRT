@@ -108,11 +108,6 @@ inline int type_to_size(const nvinfer1::DataType& dataType)
     }
 }
 
-// inline static float clamp(float val, float min, float max)
-// {
-//     return val > min ? (val < max ? val : max) : min;
-// }
-
 namespace det {
 struct Binding {
     size_t         size  = 1;

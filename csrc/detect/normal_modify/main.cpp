@@ -1,5 +1,5 @@
 #include "opencv2/opencv.hpp"
-#include "yolov8.hpp"
+#include "yolov8_det.hpp"
 #include <chrono>
 #include "common.hpp"
 
@@ -20,9 +20,9 @@ int main(int argc, char** argv)
     std::vector<std::string> imagePathList;
     bool                     isVideo{false};
 
-    auto yolov8 = new YOLOv8();
+    auto yolov8_det = new YOLOv8_Det();
 
-    bool re = yolov8->initConfig(engine_file_path);
+    bool re = yolov8_det->initConfig(engine_file_path);
 
     if (!re) {
         std::cout << "init model failed.";
@@ -68,8 +68,8 @@ int main(int argc, char** argv)
         }
         while (cap.read(image)) {
             boxes_vec.clear();
-            yolov8->detect(image, boxes_vec);
-            yolov8->draw_objects(image, boxes_vec);
+            yolov8_det->detect(image, boxes_vec);
+            yolov8_det->draw_objects(image, boxes_vec);
             if (cv::waitKey(10) == 'q') {
                 break;
             }
@@ -79,13 +79,13 @@ int main(int argc, char** argv)
         for (auto& path : imagePathList) {
             boxes_vec.clear();
             image = cv::imread(path);
-            yolov8->detect(image, boxes_vec);
-            yolov8->draw_objects(image, boxes_vec);
-            cv::imshow("result", image);
-            cv::waitKey(0);
+            yolov8_det->detect(image, boxes_vec);
+            yolov8_det->draw_objects(image, boxes_vec);
+            // cv::imshow("result", image);
+            // cv::waitKey(0);
         }
     }
     cv::destroyAllWindows();
-    delete yolov8;
+    delete yolov8_det;
     return 0;
 }

@@ -17,7 +17,7 @@ __global__ void warp_affine_bilinear_kernel(
 	uint8_t* src, int src_width, int src_height,
 	float* dst,int dst_width, int dst_height,uint8_t fill_value, AffineMatrix matrix)
 {	
-	int src_line_size = src_width * 3;
+	// int src_line_size = src_width * 3;
 	int dx = blockDim.x * blockIdx.x + threadIdx.x;
 	int dy = blockDim.y * blockIdx.y + threadIdx.y;
 	if (dx >= dst_width || dy >= dst_height) return;
@@ -48,18 +48,18 @@ __global__ void warp_affine_bilinear_kernel(
 		uint8_t* v4 = const_values;
 		if (y_low >= 0) {
 			if (x_low >= 0)
-				v1 = src + y_low * src_line_size + x_low * 3;
+				v1 = src + y_low * src_width * 3 + x_low * 3;
 
 			if (x_high < src_width)
-				v2 = src + y_low * src_line_size + x_high * 3;
+				v2 = src + y_low * src_width * 3 + x_high * 3;
 		}
 
 		if (y_high < src_height) {
 			if (x_low >= 0)
-				v3 = src + y_high * src_line_size + x_low * 3;
+				v3 = src + y_high * src_width * 3 + x_low * 3;
 
 			if (x_high < src_width)
-				v4 = src + y_high * src_line_size + x_high * 3;
+				v4 = src + y_high * src_width * 3 + x_high * 3;
 		}
 
 		c0 = floorf(w1 * v1[0] + w2 * v2[0] + w3 * v3[0] + w4 * v4[0] + 0.5f);
@@ -78,13 +78,10 @@ __global__ void warp_affine_bilinear_kernel(
 	
 }
 
-
 void warp_affine_bilinear(
 	uint8_t* src, int src_width, int src_height,
 	float* dst,int dst_width, int dst_height, 
 	uint8_t fill_value, AffineMatrix matrix, cudaStream_t stream)
-
-
 {
 	dim3 block_size(32, 32);//blocksize×î´ó1024
 	dim3 grid_size((dst_width+31)/32,(dst_height+31)/32);

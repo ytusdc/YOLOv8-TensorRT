@@ -1,7 +1,7 @@
 #include "NvInferPlugin.h"
 #include "common.hpp"
 #include <fstream>
-#include "yolov8.hpp"
+#include "yolov8_det.hpp"
 #include <opencv2/opencv.hpp>
 #include <cuda_runtime.h>
 // #include<windows.h>
@@ -15,7 +15,7 @@ void warp_affine_bilinear(uint8_t* src, int src_width, int src_height,
 using namespace det;
 
 
-bool YOLOv8::initConfig(const std::string& engine_file_path, 
+bool YOLOv8_Det::initConfig(const std::string& engine_file_path, 
                                      float score_thres, 
                                      float iou_thres,
                                      int   topk)
@@ -123,7 +123,7 @@ bool YOLOv8::initConfig(const std::string& engine_file_path,
     return true;
 }
 
-YOLOv8::~YOLOv8()
+YOLOv8_Det::~YOLOv8_Det()
 {
     this->m_context->destroy();
     this->m_engine->destroy();
@@ -137,43 +137,13 @@ YOLOv8::~YOLOv8()
     }
 }
 
-// void YOLOv8::make_pipe(bool warmup)
-// {
-//     for (auto& bindings : this->m_input_bindings) {
-//         float* d_ptr;
-//         CHECK(cudaMallocAsync(&d_ptr, bindings.size * bindings.dsize, this->m_cudaStream));
-//         this->m_device_ptrs.push_back(d_ptr);
-//     }
-
-//     for (auto& bindings : this->m_output_bindings) {
-//         float * d_ptr, *h_ptr;
-//         size_t size = bindings.size * bindings.dsize;
-//         CHECK(cudaMallocAsync(&d_ptr, size, this->m_cudaStream));
-//         CHECK(cudaHostAlloc(&h_ptr, size, 0));
-//         this->m_device_ptrs.push_back(d_ptr);
-//         this->m_host_ptrs.push_back(h_ptr);
-//     }
-
-//     if (warmup) {
-//         for (int i = 0; i < 10; i++) {
-//             for (auto& bindings : this->m_input_bindings) {
-//                 size_t size  = bindings.size * bindings.dsize;
-//                 void*  h_ptr = malloc(size);
-//                 memset(h_ptr, 0, size);
-//                 CHECK(cudaMemcpyAsync(this->m_device_ptrs[0], h_ptr, size, cudaMemcpyHostToDevice, this->m_cudaStream));
-//                 free(h_ptr);
-//             }
-//             // this->infer(this->m_device_ptrs[0]);
-//         }
-//         printf("model warmup 10 times\n");
-//     }
-// }
-
-void YOLOv8::detect(cv::Mat& image,std::vector<Box>& boxes) 
+void YOLOv8_Det::detect(cv::Mat& image,std::vector<Box>& boxes) 
 {
   auto start_infer = std::chrono::system_clock::now();
   this->infer(image);
   auto end_infer = std::chrono::system_clock::now();
+
+
   this->postprocess(boxes);
   auto end_postprocess = std::chrono::system_clock::now();
 
@@ -184,7 +154,7 @@ void YOLOv8::detect(cv::Mat& image,std::vector<Box>& boxes)
 
 }
 
-void YOLOv8::infer(cv::Mat& image)
+void YOLOv8_Det::infer(cv::Mat& image)
 {
     int width = image.cols;
 	int height = image.rows;
@@ -212,9 +182,10 @@ void YOLOv8::infer(cv::Mat& image)
             this->m_host_ptrs[i], this->m_device_ptrs[i + this->m_num_inputs], osize, cudaMemcpyDeviceToHost, this->m_cudaStream));
     }
     cudaStreamSynchronize(this->m_cudaStream);
+    CHECK(cudaFree(psrc_device));
 }
 
-void YOLOv8::postprocess(std::vector<Box>& boxes_vec)
+void YOLOv8_Det::postprocess(std::vector<Box>& boxes_vec)
 {   
     AffineMatrix  affine = this->m_affine;
     boxes_vec.clear();
@@ -286,7 +257,7 @@ void YOLOv8::postprocess(std::vector<Box>& boxes_vec)
     }
 }
 
-void YOLOv8::draw_objects(const cv::Mat&                                image,
+void YOLOv8_Det::draw_objects(const cv::Mat&                                image,
                           const std::vector<Box>&                       boxes_vec)
 {
     // res = image.clone();
